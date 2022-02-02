@@ -2,6 +2,7 @@ add_library(SourceEngine SHARED
         BitStream.cpp
         Packet.cpp
         VPK.cpp
+        VTF.cpp
         )
 
 target_include_directories(SourceEngine SYSTEM PRIVATE
