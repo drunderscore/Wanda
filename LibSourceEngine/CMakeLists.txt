@@ -1,5 +1,6 @@
 add_library(SourceEngine SHARED
         BitStream.cpp
+        BSP.cpp
         Packet.cpp
         VPK.cpp
         VTF.cpp
