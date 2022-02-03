@@ -14,7 +14,8 @@
 #include <LibSourceEngine/StringTable.h>
 #include <Server/Server.h>
 
-Server::Server() : m_server(Core::UDPServer::construct())
+Server::Server(String map_name, SourceEngine::BSP map)
+    : m_server(Core::UDPServer::construct()), m_map_name(move(map_name)), m_map(move(map))
 {
     m_server->on_ready_to_receive = [this] {
         sockaddr_in from{};
@@ -254,7 +255,11 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
                             server_info.set_operating_system('l');
                             server_info.set_tick_interval(milliseconds_per_tick / 1000);
                             server_info.set_game_dir("tf");
-                            server_info.set_map_name("cp_badlands");
+
+                            server_info.set_map_name(m_map_name);
+                            auto map_md5 = m_map.calculate_md5_hash();
+                            map_md5.bytes().copy_to(server_info.map_md5().span());
+
                             server_info.set_sky_name("sky_day01_01");
                             server_info.set_host_name("Wanda Server!");
                             server_info.set_is_replay(false);

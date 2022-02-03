@@ -5,6 +5,7 @@
 #include <LibCore/EventLoop.h>
 #include <LibCore/Timer.h>
 #include <LibCore/UDPServer.h>
+#include <LibSourceEngine/BSP.h>
 #include <LibSourceEngine/Message.h>
 #include <LibSourceEngine/Packet.h>
 #include <Server/Client.h>
@@ -12,7 +13,10 @@
 class Server
 {
 public:
-    Server();
+    // FIXME: Can we avoid passing the map name around like this? We need to tell the client it, should the Server be
+    //        told to load the map from file instead?
+    Server(String map_name, SourceEngine::BSP);
+
     ErrorOr<void> bind(const IPv4Address&, u16 port);
     int exec();
 
@@ -32,6 +36,8 @@ private:
     RefPtr<Core::Timer> m_tick_timer;
     NonnullRefPtr<Core::UDPServer> m_server;
     HashMap<sockaddr_in, Client> m_clients;
+    String m_map_name;
+    SourceEngine::BSP m_map;
 
     static constexpr float milliseconds_per_tick = 1000.0 / 66.0;
     static constexpr size_t bytes_to_receive = 2 * KiB;
