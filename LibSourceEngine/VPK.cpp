@@ -72,13 +72,9 @@ ErrorOr<VPK> VPK::try_parse_from_file_path(
                 stream >> entry.m_entry_offset;
                 stream >> entry.m_entry_length;
 
-                // TODO: proper error obviously
+                // TODO: Support archive data inside the directory
                 if (entry.m_archive_index == 0x7fff)
-                    return Error::from_string_literal("something is wrong with our archive index");
-
-                // TODO: proper error obviously
-                if (entry.m_entry_offset == 0x7fff)
-                    return Error::from_string_literal("something is wrong with our entry offset");
+                    return Error::from_string_literal("No support for archive data within the directory");
 
                 u16 terminator;
                 stream >> terminator;
