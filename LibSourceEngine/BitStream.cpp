@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2022, James Puleo <james@jame.xyz>
+ *
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+
 #include <LibSourceEngine/BitStream.h>
 
 ErrorOr<void> operator>>(SourceEngine::ReadableBitStream& stream, String& value)

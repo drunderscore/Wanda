@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2022, James Puleo <james@jame.xyz>
+ *
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+
 #include <LibCrypto/Hash/MD5.h>
 #include <LibSourceEngine/BitStream.h>
 #include <LibSourceEngine/Messages/Clientbound/CreateStringTable.h>
