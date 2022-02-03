@@ -25,14 +25,3 @@ target_include_directories(introspect SYSTEM PRIVATE
         )
 
 target_link_libraries(introspect PRIVATE Lagom::Core Lagom::Main SourceEngine)
-
-add_executable(chatter
-        chatter.cpp
-        )
-
-target_include_directories(chatter SYSTEM PRIVATE
-        ${PROJECT_SOURCE_DIR}
-        ${PROJECT_BINARY_DIR}
-        )
-
-target_link_libraries(chatter PRIVATE Lagom::Core Lagom::Main Lagom::Crypto SourceEngine)
