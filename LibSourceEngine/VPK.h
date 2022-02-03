@@ -5,6 +5,7 @@
 #include <AK/StdLibExtraDetails.h>
 #include <AK/String.h>
 #include <AK/Types.h>
+#include <LibCore/Stream.h>
 
 namespace SourceEngine
 {
@@ -28,7 +29,7 @@ public:
         friend VPK;
 
         u32 crc() const { return m_crc; }
-        Bytes data() const { return m_data; }
+        const ByteBuffer& data() const { return m_data; }
 
     private:
         u32 m_crc{};
@@ -36,15 +37,13 @@ public:
         u16 m_archive_index{};
         u32 m_entry_offset{};
         u32 m_entry_length{};
-        Bytes m_data{};
+        ByteBuffer m_data;
     };
 
     static ErrorOr<VPK> try_parse_from_file_path(
-        StringView path, Function<ErrorOr<ByteBuffer>(u16 archive_index)> resolve_external_archive);
+        StringView path,
+        Function<ErrorOr<NonnullOwnPtr<Core::Stream::SeekableStream>>(u16 archive_index)> resolve_external_archive);
     static ErrorOr<VPK> try_parse_from_file_path(StringView path);
-
-    static ErrorOr<VPK> try_parse(InputStream&,
-                                  Function<ErrorOr<ByteBuffer>(u16 archive_index)> resolve_external_archive);
 
     const HashMap<String, Entry>& entries() const { return m_entries; }
 
@@ -58,7 +57,6 @@ private:
     u32 m_signature_section_size{};
 
     HashMap<String, Entry> m_entries;
-    HashMap<u16, ByteBuffer> m_archives;
 
     static String read_string(InputStream&);
 };

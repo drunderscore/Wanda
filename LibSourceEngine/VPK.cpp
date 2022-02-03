@@ -6,28 +6,14 @@
 
 namespace SourceEngine
 {
-ErrorOr<VPK> VPK::try_parse_from_file_path(StringView path, Function<ErrorOr<ByteBuffer>(u16)> resolve_external_archive)
+ErrorOr<VPK> VPK::try_parse_from_file_path(
+    StringView path, Function<ErrorOr<NonnullOwnPtr<Core::Stream::SeekableStream>>(u16)> resolve_external_archive)
 {
     auto vpk_file = TRY(Core::File::open(String::formatted("{}_dir.vpk", path), Core::OpenMode::ReadOnly));
-    Core::InputFileStream file_stream(vpk_file);
+    Core::InputFileStream stream(vpk_file);
 
-    return try_parse(file_stream, move(resolve_external_archive));
-}
+    HashMap<u16, NonnullOwnPtr<Core::Stream::SeekableStream>> archive_streams;
 
-ErrorOr<VPK> VPK::try_parse_from_file_path(StringView path)
-{
-    auto file = TRY(Core::File::open(String::formatted("{}_dir.vpk", path), Core::OpenMode::ReadOnly));
-    Core::InputFileStream file_stream(file);
-
-    return try_parse(file_stream, [&](auto archive_index) -> ErrorOr<ByteBuffer> {
-        return TRY(Core::File::open(String::formatted("{}_{:#03}.vpk", path, archive_index), Core::OpenMode::ReadOnly))
-            ->read_all();
-    });
-}
-
-ErrorOr<VPK> VPK::try_parse(InputStream& stream,
-                            Function<ErrorOr<ByteBuffer>(u16 archive_index)> resolve_external_archive)
-{
     u32 signature;
     stream >> signature;
 
@@ -95,12 +81,15 @@ ErrorOr<VPK> VPK::try_parse(InputStream& stream,
                 if (terminator != 0xFFFF)
                     return Error::from_string_literal("Expected 0xFFFF for a terminator");
 
-                if (!vpk.m_archives.contains(entry.m_archive_index))
-                    vpk.m_archives.set(entry.m_archive_index, TRY(resolve_external_archive(entry.m_archive_index)));
+                if (!archive_streams.contains(entry.m_archive_index))
+                    archive_streams.set(entry.m_archive_index, TRY(resolve_external_archive(entry.m_archive_index)));
 
-                auto& archive_bytes = vpk.m_archives.find(entry.m_archive_index)->value;
+                auto& archive_stream = archive_streams.find(entry.m_archive_index)->value;
 
-                entry.m_data = archive_bytes.bytes().slice(entry.m_entry_offset, entry.m_entry_length);
+                TRY(archive_stream->seek(entry.m_entry_offset, Core::Stream::SeekMode::SetPosition));
+                entry.m_data = TRY(ByteBuffer::create_uninitialized(entry.m_entry_length));
+
+                TRY(archive_stream->read(entry.m_data.bytes()));
 
                 vpk.m_entries.set(String::formatted("{}/{}.{}", directory_path, name, extension), move(entry));
 
@@ -114,6 +103,15 @@ ErrorOr<VPK> VPK::try_parse(InputStream& stream,
     }
 
     return vpk;
+}
+
+ErrorOr<VPK> VPK::try_parse_from_file_path(StringView path)
+{
+    return try_parse_from_file_path(
+        path, [&](auto archive_index) -> ErrorOr<NonnullOwnPtr<Core::Stream::SeekableStream>> {
+            return TRY(Core::Stream::File::open(String::formatted("{}_{:#03}.vpk", path, archive_index),
+                                                Core::Stream::OpenMode::Read));
+        });
 }
 
 // FIXME: This doesn't really belong here :^(
