@@ -122,8 +122,6 @@ ErrorOr<void> Server::tick()
 
 ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
 {
-    outln("Received {} bytes", bytes.size());
-
     if (bytes.size() < sizeof(SourceEngine::ConnectionlessPacket::packet_header))
         return Error::from_string_literal("Not enough bytes for even a connectionless packet header");
 
@@ -139,7 +137,6 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
 
         TRY(bit_stream.skip(sizeof(SourceEngine::ConnectionlessPacket::packet_header) << 3));
         auto id = TRY(bit_stream.read_typed<char>());
-        outln("Got connectionless packet {} from {}", id, from);
 
         switch (id)
         {
@@ -192,7 +189,6 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
     else
     {
         auto packet = TRY(SourceEngine::ReceivingPacket::read(bit_stream));
-        outln("Got packet sequence {} from {}", packet.sequence(), from);
 
         auto process_messages = [&](ReadonlyBytes bytes) -> ErrorOr<void> {
             SourceEngine::MemoryBitStream message_bit_stream(bytes);
@@ -205,8 +201,6 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
                 auto cmd = TRY(message_bit_stream.read_typed<u8>(6));
 
                 last_message_position = TRY(message_bit_stream.position());
-
-                outln("message has cmd {}!", cmd);
 
                 switch (cmd)
                 {
@@ -297,8 +291,6 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
                 }
 
                 auto current_message_position = TRY(message_bit_stream.position());
-                outln("Message was {} bits, {} bytes", current_message_position - last_message_position,
-                      (current_message_position - last_message_position) >> 3);
             }
 
             return {};
@@ -312,7 +304,6 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
             TRY(process_messages(normal_channel_data.data().bytes()));
         }
 
-        outln("We have {} unreliable bytes", packet.unreliable_data().size());
         if (packet.unreliable_data().size() > 0)
             TRY(process_messages(packet.unreliable_data().bytes()));
     }
