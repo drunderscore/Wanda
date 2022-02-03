@@ -68,6 +68,14 @@ public:
         return buffer;
     }
 
+    ALWAYS_INLINE ErrorOr<void> read_bytes(Bytes bytes)
+    {
+        for (auto i = 0; i < bytes.size(); i++)
+            bytes.data()[i] = TRY(read_typed<u8>());
+
+        return {};
+    }
+
     // FIXME: Implement this better? This one is straight from the Engine and might suck
     // TODO: Might be nice to template this, don't need it yet though
     ALWAYS_INLINE ErrorOr<u32> read_varint()

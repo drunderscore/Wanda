@@ -21,9 +21,7 @@ public:
         server_info.m_is_dedicated = TRY(stream.read());
         TRY(stream.read_typed<i32>()); // client.dll CRC, used long ago before signed binaries, VAC, etc.
         TRY(stream >> server_info.m_max_classes);
-        // FIXME: Can we avoid the copy here? (and can we copy it nicer?)
-        AK::TypedTransfer<u8>::copy(server_info.m_map_md5.data(), TRY(stream.read_bytes(map_md5_size)).data(),
-                                    map_md5_size);
+        TRY(stream.read_bytes(server_info.m_map_md5.span()));
         TRY(stream >> server_info.m_player_slot);
         TRY(stream >> server_info.m_max_clients);
         TRY(stream >> server_info.m_tick_interval);
@@ -68,7 +66,7 @@ public:
     bool is_hltv() const { return m_is_hltv; }
     bool is_dedicated() const { return m_is_dedicated; }
     u16 max_classes() const { return m_max_classes; }
-    const Array<u8, 16>& map_md5() const { return m_map_md5; }
+    Array<u8, 16>& map_md5() { return m_map_md5; }
     u8 player_slot() const { return m_player_slot; }
     u8 max_clients() const { return m_max_clients; }
     float tick_interval() const { return m_tick_interval; }
@@ -84,7 +82,6 @@ public:
     void set_is_hltv(bool value) { m_is_hltv = value; }
     void set_is_dedicated(bool value) { m_is_dedicated = value; }
     void set_max_classes(u16 value) { m_max_classes = value; }
-    void set_map_md5(Array<u8, 16> value) { m_map_md5 = move(value); }
     void set_player_slot(u8 value) { m_player_slot = value; }
     void set_max_clients(u8 value) { m_max_clients = value; }
     void set_tick_interval(float value) { m_tick_interval = value; }
