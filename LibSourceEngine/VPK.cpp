@@ -8,6 +8,7 @@
 #include <AK/Vector.h>
 #include <LibCore/File.h>
 #include <LibCore/FileStream.h>
+#include <LibCrypto/Checksum/CRC32.h>
 #include <LibSourceEngine/VPK.h>
 
 namespace SourceEngine
@@ -17,8 +18,6 @@ ErrorOr<VPK> VPK::try_parse_from_file_path(
 {
     auto vpk_file = TRY(Core::File::open(String::formatted("{}_dir.vpk", path), Core::OpenMode::ReadOnly));
     Core::InputFileStream stream(vpk_file);
-
-    HashMap<u16, NonnullOwnPtr<Core::Stream::SeekableStream>> archive_streams;
 
     u32 signature;
     stream >> signature;
@@ -83,15 +82,11 @@ ErrorOr<VPK> VPK::try_parse_from_file_path(
                 if (terminator != 0xFFFF)
                     return Error::from_string_literal("Expected 0xFFFF for a terminator");
 
-                if (!archive_streams.contains(entry.m_archive_index))
-                    archive_streams.set(entry.m_archive_index, TRY(resolve_external_archive(entry.m_archive_index)));
+                if (!vpk.m_archive_streams.contains(entry.m_archive_index))
+                    vpk.m_archive_streams.set(entry.m_archive_index,
+                                              TRY(resolve_external_archive(entry.m_archive_index)));
 
-                auto& archive_stream = archive_streams.find(entry.m_archive_index)->value;
-
-                TRY(archive_stream->seek(entry.m_entry_offset, Core::Stream::SeekMode::SetPosition));
-                entry.m_data = TRY(ByteBuffer::create_uninitialized(entry.m_entry_length));
-
-                TRY(archive_stream->read(entry.m_data.bytes()));
+                entry.m_archive_stream = vpk.m_archive_streams.find(entry.m_archive_index)->value;
 
                 vpk.m_entries.set(String::formatted("{}/{}.{}", directory_path, name, extension), move(entry));
 
@@ -114,6 +109,25 @@ ErrorOr<VPK> VPK::try_parse_from_file_path(StringView path)
             return TRY(Core::Stream::File::open(String::formatted("{}_{:#03}.vpk", path, archive_index),
                                                 Core::Stream::OpenMode::Read));
         });
+}
+
+ErrorOr<ByteBuffer> VPK::Entry::read_data_from_archive(bool verify_against_crc) const
+{
+    auto buffer = TRY(ByteBuffer::create_uninitialized(m_entry_length));
+
+    TRY(m_archive_stream->seek(m_entry_offset, Core::Stream::SeekMode::SetPosition));
+    TRY(m_archive_stream->read(buffer));
+
+    if (verify_against_crc)
+    {
+        Crypto::Checksum::CRC32 crc_checksum;
+        crc_checksum.update(buffer.bytes());
+
+        if (crc_checksum.digest() != m_crc)
+            return Error::from_string_literal("CRC failed validation");
+    }
+
+    return buffer;
 }
 
 // FIXME: This doesn't really belong here :^(
