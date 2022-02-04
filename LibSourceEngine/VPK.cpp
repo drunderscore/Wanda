@@ -124,7 +124,7 @@ ErrorOr<ByteBuffer> VPK::Entry::read_data_from_archive(bool verify_against_crc) 
         crc_checksum.update(buffer.bytes());
 
         if (crc_checksum.digest() != m_crc)
-            return Error::from_string_literal("CRC failed validation");
+            return Error::from_string_literal("VPK::Entry CRC did not match");
     }
 
     return buffer;
