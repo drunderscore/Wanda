@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <AK/IntegralMath.h>
 #include <LibSourceEngine/Message.h>
 
 namespace SourceEngine::Messages::Clientbound
