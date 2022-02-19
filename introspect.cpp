@@ -1,7 +1,7 @@
 #include <LibCore/ArgsParser.h>
 #include <LibCore/EventLoop.h>
+#include <LibCore/Stream.h>
 #include <LibCore/UDPServer.h>
-#include <LibCore/UDPSocket.h>
 #include <LibMain/Main.h>
 #include <LibSourceEngine/Message.h>
 #include <LibSourceEngine/Messages/Clientbound/ServerInfo.h>
@@ -174,8 +174,8 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     Core::EventLoop event_loop;
 
-    auto introspect_server = Core::UDPServer::construct();
-    auto destination_socket = Core::UDPSocket::construct();
+    auto introspect_server = TRY(Core::UDPServer::try_create());
+    auto destination_socket = TRY(Core::Stream::UDPSocket::connect(destination_address, destination_port));
 
     Optional<sockaddr_in> first_from;
 
@@ -186,7 +186,7 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
         if (!first_from.has_value())
             first_from = from;
 
-        destination_socket->send(bytes);
+        MUST(destination_socket->write(bytes));
 
         auto maybe_error = process_packet(bytes.bytes(), Side::Server);
         if (maybe_error.is_error())
@@ -194,21 +194,21 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     };
 
     destination_socket->on_ready_to_read = [&] {
-        auto bytes = destination_socket->receive(bytes_to_receive);
+        auto buffer = MUST(ByteBuffer::create_uninitialized(bytes_to_receive));
+        auto number_of_bytes_read = MUST(destination_socket->read(buffer.bytes()));
         if (!first_from.has_value())
         {
             warnln("Got {} bytes from the destination, but don't know who to send it to!");
             return;
         }
 
-        MUST(introspect_server->send(bytes, *first_from));
-        auto maybe_error = process_packet(bytes.bytes(), Side::Client);
+        buffer.resize(number_of_bytes_read);
+
+        MUST(introspect_server->send(buffer.bytes(), *first_from));
+        auto maybe_error = process_packet(buffer.bytes(), Side::Client);
         if (maybe_error.is_error())
             warnln("Failed to process clientbound packet: {}", maybe_error.error());
     };
-
-    if (!destination_socket->connect(destination_address, destination_port))
-        return Error::from_string_literal("Failed to connect to destination server");
 
     if (!introspect_server->bind({}, source_port))
         return Error::from_string_literal("Failed to bind introspect server port");
