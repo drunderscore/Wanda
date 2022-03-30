@@ -274,7 +274,7 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
                             sign_on_state_message.set_spawn_count(0);
 
                             SourceEngine::SendingPacket sending_packet;
-                            sending_packet.set_sequence(1);
+                            sending_packet.set_sequence(maybe_client->take_next_server_packet_sequence());
                             sending_packet.set_challenge(maybe_client->server_challenge());
                             sending_packet.add_unreliable_message(print);
                             sending_packet.add_unreliable_message(server_info);

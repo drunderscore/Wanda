@@ -24,6 +24,8 @@ public:
     void set_server_challenge(int value) { m_server_challenge = value; }
     void set_client_packet_sequence(int value) { m_client_packet_sequence = value; }
     void set_server_packet_sequence(int value) { m_server_packet_sequence = value; }
+    int take_next_client_packet_sequence() { return m_client_packet_sequence++; }
+    int take_next_server_packet_sequence() { return m_server_packet_sequence++; }
 
 private:
     sockaddr_in m_address;
