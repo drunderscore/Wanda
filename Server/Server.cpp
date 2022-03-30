@@ -12,12 +12,12 @@
 #include <LibSourceEngine/Messages/Disconnect.h>
 #include <LibSourceEngine/Messages/SetConVar.h>
 #include <LibSourceEngine/Messages/SignOnState.h>
+#include <LibSourceEngine/Messages/Tick.h>
 #include <LibSourceEngine/Packets/Connectionless/Clientbound/Challenge.h>
 #include <LibSourceEngine/Packets/Connectionless/Clientbound/ConnectReject.h>
 #include <LibSourceEngine/Packets/Connectionless/Clientbound/Connection.h>
 #include <LibSourceEngine/Packets/Connectionless/Serverbound/Connect.h>
 #include <LibSourceEngine/Packets/Connectionless/Serverbound/GetChallenge.h>
-#include <LibSourceEngine/StringTable.h>
 #include <Server/Server.h>
 
 Server::Server(String map_name, SourceEngine::BSP map)
@@ -134,7 +134,6 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
     auto peeked_header = *reinterpret_cast<const int*>(bytes.data());
     if (peeked_header == SourceEngine::ConnectionlessPacket::packet_header)
     {
-
         TRY(bit_stream.skip(sizeof(SourceEngine::ConnectionlessPacket::packet_header) << 3));
         auto id = TRY(bit_stream.read_typed<char>());
 
@@ -222,8 +221,6 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
                     {
                         auto set_con_var = TRY(SourceEngine::Messages::SetConVar::read(message_bit_stream));
 
-                        outln("Client has some convars for us!");
-
                         for (auto& convar : set_con_var.convars())
                             outln("{}: {}", convar.key, convar.value);
 
@@ -267,20 +264,23 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
                             SourceEngine::Messages::Clientbound::Print print;
                             print.set_message("This is a Wanda server, bruh");
 
-                            SourceEngine::Messages::SignOnState sign_on_state_message;
-                            sign_on_state_message.set_sign_on_state(SourceEngine::SignOnState::New);
-                            sign_on_state_message.set_spawn_count(0);
+                            SourceEngine::Messages::Tick tick;
 
                             SourceEngine::Messages::Clientbound::CreateStringTable create_string_table;
                             create_string_table.set_name("downloadables");
 
+                            SourceEngine::Messages::SignOnState sign_on_state_message;
+                            sign_on_state_message.set_sign_on_state(SourceEngine::SignOnState::New);
+                            sign_on_state_message.set_spawn_count(0);
+
                             SourceEngine::SendingPacket sending_packet;
                             sending_packet.set_sequence(1);
                             sending_packet.set_challenge(maybe_client->server_challenge());
-                            sending_packet.add_unreliable_message(server_info);
                             sending_packet.add_unreliable_message(print);
-                            sending_packet.add_unreliable_message(sign_on_state_message);
+                            sending_packet.add_unreliable_message(server_info);
+                            sending_packet.add_unreliable_message(tick);
                             sending_packet.add_unreliable_message(create_string_table);
+                            sending_packet.add_unreliable_message(sign_on_state_message);
                             TRY(send(sending_packet, from));
                         }
 
