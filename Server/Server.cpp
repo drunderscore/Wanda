@@ -219,11 +219,7 @@ ErrorOr<void> Server::receive(ByteBuffer& bytes, sockaddr_in& from)
                     }
                     case SourceEngine::Messages::SetConVar::constant_id:
                     {
-                        auto set_con_var = TRY(SourceEngine::Messages::SetConVar::read(message_bit_stream));
-
-                        for (auto& convar : set_con_var.convars())
-                            outln("{}: {}", convar.key, convar.value);
-
+                        TRY(SourceEngine::Messages::SetConVar::read(message_bit_stream));
                         break;
                     }
                     case SourceEngine::Messages::SignOnState::constant_id:
