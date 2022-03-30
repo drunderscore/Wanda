@@ -29,6 +29,7 @@ private:
     sockaddr_in m_address;
     int m_client_challenge{}; // This is the challenge this client gave us
     int m_server_challenge{}; // This is the challenge we gave the client
-    int m_client_packet_sequence{};
-    int m_server_packet_sequence{};
+    // Sequences always start at 1
+    int m_client_packet_sequence{1};
+    int m_server_packet_sequence{1};
 };
