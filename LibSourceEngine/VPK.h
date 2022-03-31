@@ -33,6 +33,7 @@ public:
         friend VPK;
 
         u32 crc() const { return m_crc; }
+        u32 entry_length() const { return m_entry_length; }
         ErrorOr<ByteBuffer> read_data_from_archive(bool verify_against_crc = false) const;
 
     private:

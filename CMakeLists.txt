@@ -25,3 +25,13 @@ target_include_directories(introspect SYSTEM PRIVATE
         )
 
 target_link_libraries(introspect PRIVATE Lagom::Core Lagom::Main SourceEngine)
+add_executable(vpktool
+        vpktool.cpp
+        )
+
+target_include_directories(vpktool SYSTEM PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_BINARY_DIR}
+        )
+
+target_link_libraries(vpktool PRIVATE Lagom::Core Lagom::Main SourceEngine)
