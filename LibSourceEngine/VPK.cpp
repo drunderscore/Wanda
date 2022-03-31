@@ -88,7 +88,12 @@ ErrorOr<VPK> VPK::try_parse_from_file_path(
 
                 entry.m_archive_stream = vpk.m_archive_streams.find(entry.m_archive_index)->value;
 
-                vpk.m_entries.set(String::formatted("{}/{}.{}", directory_path, name, extension), move(entry));
+                // QUIRK: A single space as the directory path represents the root
+                // FIXME: Should this use an AK::LexicalPath? What if m_entries stored AK::LexicalPath?
+                if(directory_path[0] == ' ')
+                    vpk.m_entries.set(String::formatted("{}.{}", name, extension), move(entry));
+                else
+                    vpk.m_entries.set(String::formatted("{}/{}.{}", directory_path, name, extension), move(entry));
 
                 name = read_string(stream);
             }
