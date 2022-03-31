@@ -67,7 +67,7 @@ public:
         RenderTarget = 1 << 15,
         DepthRenderTarget = 1 << 16,
         NoDebugOverride = 1 << 17,
-        SinlgeCopy = 1 << 18,
+        SingleCopy = 1 << 18,
         PreSRGB = 1 << 19,
         NoDepthBuffer = 1 << 23,
         ClampU = 1 << 25,
