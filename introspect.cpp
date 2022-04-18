@@ -195,17 +195,15 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
 
     destination_socket->on_ready_to_read = [&] {
         auto buffer = MUST(ByteBuffer::create_uninitialized(bytes_to_receive));
-        auto number_of_bytes_read = MUST(destination_socket->read(buffer.bytes()));
+        auto buffer_bytes = MUST(destination_socket->read(buffer.bytes()));
         if (!first_from.has_value())
         {
             warnln("Got {} bytes from the destination, but don't know who to send it to!");
             return;
         }
 
-        buffer.resize(number_of_bytes_read);
-
-        MUST(introspect_server->send(buffer.bytes(), *first_from));
-        auto maybe_error = process_packet(buffer.bytes(), Side::Client);
+        MUST(introspect_server->send(buffer_bytes, *first_from));
+        auto maybe_error = process_packet(buffer_bytes, Side::Client);
         if (maybe_error.is_error())
             warnln("Failed to process clientbound packet: {}", maybe_error.error());
     };

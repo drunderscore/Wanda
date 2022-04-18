@@ -1,7 +1,7 @@
 #include <AK/LexicalPath.h>
 #include <AK/NumberFormat.h>
 #include <LibCore/ArgsParser.h>
-#include <LibCore/File.h>
+#include <LibCore/Directory.h>
 #include <LibCore/Stream.h>
 #include <LibMain/Main.h>
 #include <LibSourceEngine/VPK.h>
@@ -46,19 +46,13 @@ ErrorOr<int> serenity_main(Main::Arguments arguments)
     }
     else if (extract_all_files)
     {
-        auto current_working_directory = Core::File::current_working_directory();
-
         size_t number_of_entries_written = 0;
         size_t number_of_bytes_written = 0;
         for (auto& entry : vpk.entries())
         {
             auto entry_data = TRY(entry.value.read_data_from_archive(true));
 
-            // FIXME: This should use realpath, somehow
-            auto absolute_path_for_entry = String::formatted("{}/{}", current_working_directory, entry.key);
-
-            if (!Core::File::ensure_parent_directories(absolute_path_for_entry))
-                return Error::from_string_literal("Unable to ensure parent directories");
+            TRY(Core::Directory::create(LexicalPath(entry.key).parent(), Core::Directory::CreateDirectories::Yes));
 
             auto entry_stream = TRY(Core::Stream::File::open(entry.key, Core::Stream::OpenMode::Write));
             TRY(entry_stream->write(entry_data));
